@@ -1,9 +1,12 @@
+{% load static %}
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport"
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="{% static 'tasks/style.css' %}">
     <title>Document</title>
 </head>
 <body>
@@ -14,10 +17,17 @@
                         <li>
                             <form method="post">
                                     {% csrf_token %}
-                                    <label for="task{{ task.id }}">
-                                        <input type="radio" name="task_id"  value="{{ task.id }}" id="task{{ task.id }}" onchange="this.form.submit()">
-                                        {{ task.task_text }}
-                                    </label>
+                                        <div class="tasks_div_li">
+                                             <label for="task{{ task.id }}">
+                                                 <input type="radio" name="task_id"  value="{{ task.id }}" id="task{{ task.id }}" onchange="this.form.submit()">
+                                                 <b>{{ task.task_text }}</b>
+                                                 {% if task.task_deadline %}
+                                                    <label style="margin-left: 100px;">Выполнить до: {{ task.task_deadline }}</label>
+                                                 {% else %}
+                                                    <a style="margin-left: 225px;">Добавить срок сдачи</a>
+                                                 {% endif %}
+                                             </label>
+                                        </div>
                             </form>
                         </li>
                     {% endfor %}
@@ -28,8 +38,27 @@
     {% else %}
         <h2>Нету задач для выполнения!</h2>
     {% endif %}
-    <form action="{% url 'create_task' %}">
+    <form action="{% url 'tasks:create_task' %}">
         <button type="submit">Добавить новую задачу</button>
     </form>
+
+    {% if completed_today %}
+        <div>
+            <h3>Завершено сегодня</h3>
+            <ul style="list-style-type: none;">
+                {% for task in completed_today %}
+                    <li>
+                        <form method="post">
+                            {% csrf_token %}
+                            <label for="completed_task{{ task.id }}">
+                                <input type="radio" name="completed_task_id"  value="{{ task.id }}" id="completed_task{{ task.id }}" onchange="this.form.submit()">
+                                {{ task.task_text }}
+                            </label>
+                        </form>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
 </body>
 </html>
