@@ -7,6 +7,29 @@
     <title>Document</title>
 </head>
 <body>
-    <p>Всякие таски...</p>
+    {% if tasks %}
+        <div>
+                <ul style="list-style-type: none;">
+                   {% for task in tasks %}
+                        <li>
+                            <form method="post">
+                                    {% csrf_token %}
+                                    <label for="task{{ task.id }}">
+                                        <input type="radio" name="task_id"  value="{{ task.id }}" id="task{{ task.id }}" onchange="this.form.submit()">
+                                        {{ task.task_text }}
+                                    </label>
+                            </form>
+                        </li>
+                    {% endfor %}
+                </ul>
+
+        </div>
+
+    {% else %}
+        <h2>Нету задач для выполнения!</h2>
+    {% endif %}
+    <form action="{% url 'create_task' %}">
+        <button type="submit">Добавить новую задачу</button>
+    </form>
 </body>
 </html>

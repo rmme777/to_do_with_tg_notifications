@@ -1,16 +1,40 @@
 from django import forms
+from django.contrib.auth.forms import UserCreationForm
+
 from .models import Users
 from crispy_forms.layout import Submit, Layout, Field
 from crispy_forms.helper import FormHelper
 from django.contrib.auth import authenticate
 
 
-class RegistrationForm(forms.ModelForm):
+class RegistrationForm(UserCreationForm):
+    login = forms.EmailField(label="Введите почту")
+    password1 = forms.CharField(
+        label="Введите пароль", widget=forms.PasswordInput()
+    )
+    password2 = forms.CharField(
+        label="Повторите пароль", widget=forms.PasswordInput()
+    )
+
     class Meta:
         model = Users
-        fields = ['login', 'password']
+        fields = ("login",)
 
-    password = forms.CharField(widget=forms.PasswordInput)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if 'username' in self.fields:
+            del self.fields['username']
+
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.layout = Layout(
+            Field('login'),
+            Field('password1'),
+            Field('password2'),
+            Submit('submit', 'Зарегистрироваться', css_class='btn btn-success'),
+        )
+
 
 
 class AuntieficationForm(forms.Form):

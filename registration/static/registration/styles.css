@@ -2,3 +2,10 @@
     background-color: #FFF0F5,
 
 }
+
+.form-centering {
+  position: absolute;
+  top: 30%;
+  left: 70%;
+  transform: translate(-50%, -50%);
+}
