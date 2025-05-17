@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'registration.apps.RegistrationConfig',
     'tasks.apps.TasksConfig',
     'crispy_forms',
+    'cabinet.apps.CabinetConfig',
 ]
 
 MIDDLEWARE = [
@@ -128,6 +129,9 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'tasks' / 'static',
 ]
+
+LOGOUT_REDIRECT_URL = '/'
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

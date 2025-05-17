@@ -17,17 +17,24 @@
                         <li>
                             <form method="post">
                                     {% csrf_token %}
-                                        <div class="tasks_div_li">
-                                             <label for="task{{ task.id }}">
-                                                 <input type="radio" name="task_id"  value="{{ task.id }}" id="task{{ task.id }}" onchange="this.form.submit()">
-                                                 <b>{{ task.task_text }}</b>
-                                                 {% if task.task_deadline %}
-                                                    <label style="margin-left: 100px;">Выполнить до: {{ task.task_deadline }}</label>
-                                                 {% else %}
-                                                    <a style="margin-left: 225px;">Добавить срок сдачи</a>
-                                                 {% endif %}
-                                             </label>
+                                        <div class="task-item">
+                                            <div class="task-left">
+                                                <label for="task{{ task.id }}">
+                                                    <input type="radio" name="task_id" value="{{ task.id }}" id="task{{ task.id }}" onchange="this.form.submit()">
+                                                    <b>{{ task.task_text }}</b>
+                                                </label>
+                                                {% if task.task_deadline %}
+                                                <div class="task-deadline">Выполнить до: {{ task.task_deadline }}</div>
+                                                {% endif %}
+                                            </div>
+                                             <div class="task-right">
+                                                 <a href="{% url 'tasks:update_task' task.id %}">
+                                                    <button type="button">Редактировать задачу</button>
+                                                 </a>
+                                                 <button type="submit" name="to_delete_task_id" value="{{ task.id }}" class="delete-btn">Удалить</button>
+                                             </div>
                                         </div>
+
                             </form>
                         </li>
                     {% endfor %}

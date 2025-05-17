@@ -1,9 +1,54 @@
 .tasks_div_li {
     width: 40%;
-    background-color: #f0f8ff;         /* Цвет фона */
-    border: 2px solid #3498db;         /* Обводка (цвет и толщина) */
-    border-radius: 10px;               /* Скругление углов */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Тень */
-    padding: 20px;                     /* Внутренние отступы */
-    margin: 20px;                      /* Внешние отступы */
+    background-color: #f0f8ff;
+    border: 2px solid #3498db;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    margin: 20px;
+}
+
+.task-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.task-left {
+    display: flex;
+    flex-direction: column;
+}
+
+.task-deadline {
+    font-size: 12px;
+    color: #888;
+    margin-top: 5px;
+}
+
+.task-right {
+    display: flex;
+    gap: 10px;
+}
+
+.edit-btn, .delete-btn {
+    font-size: 13px;
+    padding: 5px 10px;
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+}
+
+.edit-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.delete-btn {
+    background-color: #f44336;
+    color: white;
 }
