@@ -12,39 +12,59 @@
 <body>
     {% if tasks %}
         <div>
-                <ul style="list-style-type: none;">
-                   {% for task in tasks %}
-                        <li>
-                            <form method="post">
-                                    {% csrf_token %}
-                                        <div class="task-item">
-                                            <div class="task-left">
-                                                <label for="task{{ task.id }}">
-                                                    <input type="radio" name="task_id" value="{{ task.id }}" id="task{{ task.id }}" onchange="this.form.submit()">
-                                                    <b>{{ task.task_text }}</b>
-                                                </label>
-                                                {% if task.task_deadline %}
-                                                <div class="task-deadline">Выполнить до: {{ task.task_deadline }}</div>
-                                                {% endif %}
+            <ul style="list-style-type: none;">
+               {% for task in tasks %}
+                    <li>
+                       <form method="post">
+                            {% csrf_token %}
+                            <div class="task-item">
+                                <div class="task-left">
+                                    <label for="task{{ task.id }}">
+                                        <input type="radio" name="task_id" value="{{ task.id }}" id="task{{ task.id }}" onchange="this.form.submit()">
+                                        <b>{{ task.task_text }}</b>
+                                    </label>
+
+                                    {% if task.task_deadline %}
+                                        <div class="task-deadline">Выполнить до: {{ task.task_deadline }}</div>
+
+                                        {% if notifications_enabled %}
+                                            <label for="notification_time_{{ task.id }}">Уведомить за:</label>
+                                            <select name="notification_time" id="notification_time_{{ task.id }}" onchange="toggleCustomInput('{{ task.id }}')">
+                                                <option value="5" {% if task.notification_delta_minutes == 5 %}selected{% endif %}>5 минут</option>
+                                                <option value="15" {% if task.notification_delta_minutes == 15 %}selected{% endif %}>15 минут</option>
+                                                <option value="30" {% if task.notification_delta_minutes == 30 %}selected{% endif %}>30 минут</option>
+                                                <option value="60" {% if task.notification_delta_minutes == 60 %}selected{% endif %}>1 час</option>
+                                                <option value="custom" {% if task.notification_delta_minutes not in valid_minutes %}selected{% endif %}>Свое значение</option>
+                                            </select>
+                                            <div id="custom_input_wrapper_{{ task.id }}" style="margin-top: 5px; {% if task.notification_delta_minutes not in valid_minutes %}display:block{% else %}display:none{% endif %};">
+                                                <input type="number" name="custom_minutes" placeholder="Минуты"
+                                                       value="{% if task.notification_delta_minutes not in valid_minutes %}{{ task.notification_delta_minutes }}{% endif %}"
+                                                       min="1" max="1440" style="width: 100px;">
                                             </div>
-                                             <div class="task-right">
-                                                 <a href="{% url 'tasks:update_task' task.id %}">
-                                                    <button type="button">Редактировать задачу</button>
-                                                 </a>
-                                                 <button type="submit" name="to_delete_task_id" value="{{ task.id }}" class="delete-btn">Удалить</button>
-                                             </div>
-                                        </div>
+                                            <button type="submit" name="save_notification_task_id" value="{{ task.id }}">Сохранить уведомление</button>
+                                        {% endif %}
 
-                            </form>
-                        </li>
-                    {% endfor %}
-                </ul>
 
+
+                                    {% endif %}
+                                </div>
+
+                                <div class="task-right">
+                                    <a href="{% url 'tasks:update_task' task.id %}">
+                                        <button type="button">Редактировать задачу</button>
+                                    </a>
+                                    <button type="submit" name="to_delete_task_id" value="{{ task.id }}" class="delete-btn">Удалить</button>
+                                </div>
+                            </div>
+                        </form>
+                    </li>
+                {% endfor %}
+            </ul>
         </div>
-
     {% else %}
         <h2>Нету задач для выполнения!</h2>
     {% endif %}
+
     <form action="{% url 'tasks:create_task' %}">
         <button type="submit">Добавить новую задачу</button>
     </form>
@@ -68,4 +88,17 @@
         </div>
     {% endif %}
 </body>
+
+<script>
+function toggleCustomInput(taskId) {
+    const select = document.getElementById(`notification_time_${taskId}`);
+    const customInputDiv = document.getElementById(`custom_input_wrapper_${taskId}`);
+    if (select.value === "custom") {
+        customInputDiv.style.display = "block";
+    } else {
+        customInputDiv.style.display = "none";
+    }
+}
+</script>
+
 </html>

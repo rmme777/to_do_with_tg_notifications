@@ -1,3 +1,5 @@
+from asgiref.sync import sync_to_async
+
 from database import django_db_setup, save_to_db, get_from_db_by_token, get_from_db_by_chat_id
 from admin import bot_started, bot_deactivated
 from aiogram import Dispatcher, Bot
@@ -82,6 +84,11 @@ async def toggle_notifications(message: Message):
 
         notif.notifications_included = not notif.notifications_included
         await save_to_db(notif)
+
+        if not notif.notifications_included:
+            from tasks.models import TaskToComplete  # TODO: переделать в функцию database
+            await sync_to_async(TaskToComplete.objects.filter(user_id=notif.user_id).update)(notification_time=None,
+                                                                                             task_deadline=None)
 
         notif_text = 'Уведомления включены✅' if notif.notifications_included else 'Уведомления отключены❌'
 
