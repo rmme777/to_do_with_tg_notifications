@@ -8,9 +8,17 @@
     <title>Document</title>
 </head>
 <body>
-    <form method="post" action="{% url 'logout' %}">
-        {% csrf_token %}
-    <button type="submit">Выйти из аккаунта</button>
-</form>
+    <div>
+        <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+        <button type="submit">Выйти из аккаунта</button>
+        </form>
+    </div>
+    <div>
+        <form action="{% url 'bot_redirect' %}" method="post">
+            {% csrf_token %}
+            <button type="submit">Подключить уведомления в Telegram</button>
+        </form>
+    </div>
 </body>
 </html>

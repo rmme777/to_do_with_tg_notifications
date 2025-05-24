@@ -1,1 +1,9 @@
 django
+aiogram
+psycopg[binary,async]
+psycopg-pool
+apscheduler
+apscheduler-di
+redis
+asgiref
+

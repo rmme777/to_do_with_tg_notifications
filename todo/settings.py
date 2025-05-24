@@ -147,5 +147,5 @@ LOGIN_REDIRECT_URL = reverse_lazy('tasks:view_tasks')
 
 AUTH_USER_MODEL = 'registration.Users'
 
-LOGIN_URL = ''
+LOGIN_URL = '/'
 
