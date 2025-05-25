@@ -1,6 +1,9 @@
-from asgiref.sync import sync_to_async
+from time import timezone
+from zoneinfo import ZoneInfo
 
-from database import django_db_setup, save_to_db, get_from_db_by_token, get_from_db_by_chat_id
+from database import (django_db_setup, save_to_db, get_from_notifbot_by_token, get_from_notifbot_by_chat_id,
+                      turn_off_notification_setting, get_from_tasks_to_complete_by_user_id,
+                      get_from_tasks_to_complete_by_task_id, delete_task, save_complete_to_completed)
 from admin import bot_started, bot_deactivated
 from aiogram import Dispatcher, Bot
 from _config import TOKEN
@@ -10,9 +13,13 @@ import logging
 from aiogram.types import BotCommand, BotCommandScopeDefault
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 from aiogram import Router, F
+from notifications_bot.middlewares.async_sheduler import SchedulerMiddleware, AsyncIOScheduler
+import datetime
+from middlewares.async_sheduler import start_send_message_scheduler
 
 django_db_setup()
 from cabinet.models import NotificationBot
+from django.utils import timezone
 
 router = Router()
 
@@ -26,12 +33,12 @@ async def commands(bot_: Bot):
 
 
 @router.message(Command(commands=['start']))
-async def auth(message: Message):
+async def auth(message: Message, bot: Bot, scheduler: AsyncIOScheduler):
     args = message.text.split()
     if len(args) == 2:
         uuid_token = args[1]
         try:
-            notif = await get_from_db_by_token(uuid_token)
+            notif = await get_from_notifbot_by_token(uuid_token)
             notif.telegram_chat_id = message.chat.id
             notif.authorized = True
             notif.notifications_included = True
@@ -45,6 +52,8 @@ async def auth(message: Message):
                     ],
                 ]
             )
+            await start_send_message_scheduler(send_notification, message, bot, scheduler,
+                                               notif.notifications_included, notif.user_id)
             await message.answer("Уведомления успешно подключены! Для настройки уведомлений перейдите на сайт.",
                                  reply_markup=reply_keyboard)
             print(f"[INFO] Пользователь {message.chat.id} успешно авторизован с токеном {uuid_token}")
@@ -54,7 +63,7 @@ async def auth(message: Message):
            await message.bot.send_message(message.chat.id, "Неверная или устаревшая ссылка.")
            print(f"[WARN] Не найден токен {uuid_token} для пользователя {message.chat.id}")
     else:
-        notif = await get_from_db_by_chat_id(message.chat.id)
+        notif = await get_from_notifbot_by_chat_id(message.chat.id)
 
         if notif and notif.authorized:
             notif_text = 'Уведомления включены✅' if notif.notifications_included else 'Уведомления отключены❌'
@@ -66,6 +75,8 @@ async def auth(message: Message):
                     ],
                 ]
             )
+            await start_send_message_scheduler(send_notification, message, bot, scheduler,
+                                               notif.notifications_included, notif.user_id)
             await message.answer("Вы уже авторизованы🔑 Для настройки уведомлений перейдите на сайт.", reply_markup=reply_keyboard)
         else:
             await message.answer(
@@ -77,18 +88,13 @@ async def auth(message: Message):
 @router.message(F.text.in_(['Уведомления включены✅', 'Уведомления отключены❌']))
 async def toggle_notifications(message: Message):
     try:
-        notif = await get_from_db_by_chat_id(message.chat.id)
+        notif = await get_from_notifbot_by_chat_id(message.chat.id)
         if not notif:
             await message.answer("Вы не авторизованы.")
             return
 
         notif.notifications_included = not notif.notifications_included
         await save_to_db(notif)
-
-        if not notif.notifications_included:
-            from tasks.models import TaskToComplete  # TODO: переделать в функцию database
-            await sync_to_async(TaskToComplete.objects.filter(user_id=notif.user_id).update)(notification_time=None,
-                                                                                             task_deadline=None)
 
         notif_text = 'Уведомления включены✅' if notif.notifications_included else 'Уведомления отключены❌'
 
@@ -111,7 +117,32 @@ async def toggle_notifications(message: Message):
         await message.answer("Произошла ошибка.")
 
 
+async def check_deadlines(message: Message):
+    notif = await get_from_notifbot_by_chat_id(message.chat.id)
+    tasks = await get_from_tasks_to_complete_by_user_id(notif.user_id)
+    notifs_to_send = []
+    for task in tasks:
+        if not task.notification_time:
+            continue
+        if datetime.datetime.now(ZoneInfo("Europe/Kyiv")) >= task.notification_time:
+            notifs_to_send.append((task.task_text, task.task_deadline - task.notification_time, task.id))
+    return notifs_to_send if notifs_to_send else None
 
+
+async def send_notification(message: Message, bot: Bot):
+    notif = await get_from_notifbot_by_chat_id(message.chat.id)
+    ck_deadlines_return = await check_deadlines(message)
+    if ck_deadlines_return:
+        for task_text, time_to_deadline, task_id in ck_deadlines_return:
+            if notif.notifications_included:
+                await bot.send_message(
+                    message.chat.id,
+                    text=f"Новое уведомление!\nДедлайн задачи '{task_text}' закончится через {time_to_deadline}"
+                )
+                task_to_delete = await get_from_tasks_to_complete_by_task_id(task_id)
+                if task_to_delete:
+                    await save_complete_to_completed(task_to_delete.task_text, timezone.now(), task_to_delete.user_id)
+                    await delete_task(task_to_delete)
 
 
 async def main():
@@ -121,6 +152,11 @@ async def main():
     bot = Bot(TOKEN)
     dp = Dispatcher()
     dp.include_router(router)
+    scheduler = AsyncIOScheduler(timezone='Europe/Kyiv')
+    scheduler.start()
+    router.message.middleware(SchedulerMiddleware(scheduler))
+    router.message.register(send_notification)
+
 
     dp.startup.register(bot_started)
     dp.shutdown.register(bot_deactivated)

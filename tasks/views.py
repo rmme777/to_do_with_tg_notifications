@@ -49,19 +49,26 @@ def view_tasks(request):
 
 
         elif save_notification_task_id:
-            task = TaskToComplete.objects.get(id=save_notification_task_id)
-            selected = request.POST.get('notification_time')
+            try:
+                task = TaskToComplete.objects.get(id=save_notification_task_id)
+                selected = request.POST.get('notification_time')
 
-            if selected == 'custom':
-                custom_minutes = int(request.POST.get('custom_minutes', 0))
-                delta = timedelta(minutes=custom_minutes)
-            else:
-                delta = timedelta(minutes=int(selected))
+                if selected == 'custom':
+                    custom_minutes = int(request.POST.get('custom_minutes', 0))
+                    delta = timedelta(minutes=custom_minutes)
+                else:
+                    delta = timedelta(minutes=int(selected))
 
-            task.notification_time = task.task_deadline - delta
-            task.save()
+                if task.task_deadline:
+                    task.notification_time = task.task_deadline - delta
+                else:
+                    task.notification_time = None
+                task.save()
 
-            saved_task_id = task.id
+                saved_task_id = task.id
+            except Exception:
+                print("Ошибка во вьюхе view_tasks")
+
 
     today = datetime.today().date()
     start = make_aware(datetime.combine(today, time.min))
